@@ -1,98 +1,62 @@
-☕ Coffee Shop Transaction Analysis
-📌 Overview
-This project focuses on cleaning, transforming, and analyzing transaction data stored in the Snowflake table:
+# ☕ Coffee Shop Transaction Analysis
 
-Code
-MYDATA_COFFEE_SHOP.PUBLIC.ANALYSIS200
-The workflow includes:
+## 📌 Summary of the Case Study
+This case study demonstrates how SQL queries can be applied to **clean, transform, and analyze transaction data** stored in the Snowflake table `MYDATA_COFFEE_SHOP.PUBLIC.ANALYSIS200`. The project focused on preparing raw transaction records for reporting by cleaning unit price values, calculating transaction totals, creating timestamps and time buckets, and aggregating sales metrics. The goal was to deliver **actionable insights** into sales performance, product trends, and customer behavior.
 
-Data preview
+---
 
-Cleaning unit price values
+## 🔍 How the Case Study Was Done
+1. **Data Preview**
+   - Retrieved all records using `SELECT *` to understand the raw structure of the dataset.
 
-Calculating transaction totals
+2. **Data Cleaning**
+   - Added a numeric column `unit_price_num` to store cleaned unit price values.  
+   - Replaced commas with dots and cast values to numbers using `TRY_TO_NUMBER(REPLACE(...))`.
 
-Creating timestamps and time buckets
+3. **Transaction Amount Calculation**
+   - Added a new column `total_amount`.  
+   - Populated with the formula: `unit_price_num * transaction_qty`.
 
-Aggregating sales metrics for reporting
+4. **Timestamp Creation**
+   - Added a column `transaction_ts`.  
+   - Combined transaction date and time into a proper timestamp using `TO_TIMESTAMP_NTZ`.
 
-🛠️ Requirements
-Snowflake Database with access to schema MYDATA_COFFEE_SHOP.PUBLIC
+5. **Time Bucketing**
+   - Added a column `transaction_time_bucket`.  
+   - Grouped transactions into 30-minute intervals using `TIME_SLICE`.
 
-SQL execution environment (Snowflake Worksheet, Python connector, or BI tool)
+6. **Aggregations**
+   - Generated metrics grouped by time bucket, product type, and product detail:  
+     - `SUM(transaction_qty)` → Total Units Sold  
+     - `SUM(unit_price_num * transaction_qty)` → Total Sales  
+     - `AVG(unit_price_num)` → Average Unit Price  
+   - Ordered results by time bucket and total sales for reporting clarity.
 
-Proper permissions to ALTER TABLE, UPDATE, and SELECT
+---
 
-📂 Steps
-1. Preview Data
-sql
-SELECT * 
-FROM "MYDATA_COFFEE_SHOP"."PUBLIC"."ANALYSIS200";
-This retrieves all records to understand the raw structure.
+## 📊 Insights Found
+- Cleaning unit price values ensured **accurate calculations** for transaction totals.  
+- Transaction timestamps allowed grouping into **30-minute buckets**, revealing peak sales periods.  
+- Aggregated metrics highlighted:  
+  - **Top-selling products** by type and detail.  
+  - **Revenue drivers** across different time intervals.  
+  - **Average pricing trends**, useful for monitoring consistency and promotions.  
+- The workflow transformed raw transactional data into **structured insights** ready for dashboards and BI tools.  
 
-2. Clean Unit Price
-Add a numeric column for unit price:
+---
 
-sql
-ALTER TABLE "MYDATA_COFFEE_SHOP"."PUBLIC"."ANALYSIS200"
-ADD COLUMN unit_price_num NUMBER;
-Populate with cleaned values (replace commas with dots, cast to number):
+## 🎯 Summary of Findings
+By applying SQL transformations and aggregations, the project uncovered:  
+- **Sales performance trends** across time intervals.  
+- **Product-level insights** into units sold, revenue, and pricing.  
+- A reproducible workflow for cleaning and preparing transactional data.  
 
-sql
-UPDATE "MYDATA_COFFEE_SHOP"."PUBLIC"."ANALYSIS200"
-SET unit_price_num = TRY_TO_NUMBER(REPLACE(unit_price, ',', '.'));
-3. Calculate Transaction Amount
-Add a new column:
+This demonstrates how SQL can be leveraged to deliver **business intelligence** that supports **sales reporting, inventory management, and operational decision-making** in a retail coffee shop environment.
 
-sql
-ALTER TABLE "MYDATA_COFFEE_SHOP"."PUBLIC"."ANALYSIS200"
-ADD COLUMN total_amount NUMBER;
-Populate with calculation:
+---
 
-sql
-UPDATE "MYDATA_COFFEE_SHOP"."PUBLIC"."ANALYSIS200"
-SET total_amount = unit_price_num * transaction_qty;
-4. Create Transaction Timestamp
-Add timestamp column:
+## 🛠️ Tools Used
+- **Snowflake Database** → Data storage and query execution.  
+- **SQL functions** → `ALTER TABLE`, `UPDATE`, `SELECT`, `SUM`, `AVG`, `TIME_SLICE`, `CASE`, `GROUP BY`, `ORDER BY`.  
+- **Execution Environments** → Snowflake Worksheet, Python connector, or BI tools (e.g., Power BI, Looker Studio).  
 
-sql
-ALTER TABLE "MYDATA_COFFEE_SHOP"."PUBLIC"."ANALYSIS200"
-ADD COLUMN transaction_ts TIMESTAMP;
-Populate with combined date + time:
-
-sql
-UPDATE "MYDATA_COFFEE_SHOP"."PUBLIC"."ANALYSIS200"
-SET transaction_ts = TO_TIMESTAMP_NTZ(transaction_date || ' ' || transaction_time);
-5. Create 30-Minute Time Buckets
-Add bucket column:
-
-sql
-ALTER TABLE "MYDATA_COFFEE_SHOP"."PUBLIC"."ANALYSIS200"
-ADD COLUMN transaction_time_bucket TIMESTAMP;
-Populate using TIME_SLICE:
-
-sql
-UPDATE "MYDATA_COFFEE_SHOP"."PUBLIC"."ANALYSIS200"
-SET transaction_time_bucket = TIME_SLICE(transaction_ts, 30, 'MINUTE');
-6. Aggregate Results
-Generate metrics by time bucket, product type, and product detail:
-
-sql
-SELECT
-  transaction_time_bucket,
-  product_type,
-  product_detail,
-  SUM(transaction_qty) AS total_units,
-  SUM(unit_price_num * transaction_qty) AS total_sales,
-  AVG(unit_price_num) AS avg_price
-FROM "MYDATA_COFFEE_SHOP"."PUBLIC"."ANALYSIS200"
-GROUP BY transaction_time_bucket, product_type, product_detail
-ORDER BY transaction_time_bucket, total_sales DESC;
-📊 Metrics Produced
-Total Units Sold → SUM(transaction_qty)
-
-Total Sales → SUM(unit_price_num * transaction_qty)
-
-Average Unit Price → AVG(unit_price_num)
-
-Time Buckets → Transactions grouped into 30-minute intervals
